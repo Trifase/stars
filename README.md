@@ -1,7 +1,8 @@
 <!-- ![alt text](http://url/to/img.png) -->
 
-
-```Uso: main.py [-h] [--width [WIDTH]] [--height [HEIGHT]] [--seed SEED]
+Stars - un generatore di immagini di sistemi solari
+```
+Uso: main.py [-h] [--width [WIDTH]] [--height [HEIGHT]] [--seed SEED]
                [--tinyborder] [--noborder] [--nostars] [--origin]
 
 options:
@@ -13,4 +14,5 @@ options:
   --tinyborder       bordo sottile
   --noborder         non generare il bordo
   --nostars          non generare le stelline sullo sfondo
-  --origin           disattiva tutte le feature random```
+  --origin           disattiva tutte le feature random
+ ```
