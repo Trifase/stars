@@ -4,6 +4,7 @@ import math
 import random
 import argparse
 from PIL import Image, ImageDraw, ImageFont
+import numpy as np
 
 
 
@@ -1002,6 +1003,7 @@ def solarsystem():
 
     STARS = 500
     BORDERSIZE = 50
+    NOISE = 3
 
     seed = uuid.uuid4()
 
@@ -1252,7 +1254,35 @@ def solarsystem():
         draw.text(anchor, system_name.upper(), font=font, anchor="mm", fill=rgb_bgcolor, stroke_width=0)
         
         img.save(image_path)
-    
+
+    if NOISE:
+        # Load image
+        img = np.array(Image.open(image_path))
+
+        # Define mean and standard deviation
+        mean = 0
+        stddev = NOISE
+
+        # Create grayscale Gaussian noise array and add it to image
+        noise = np.random.normal(mean, stddev, img.shape[:2])
+        noisy_img = np.zeros(img.shape, dtype=np.uint8)
+        noisy_img[:,:,0] = np.clip(img[:,:,0] + noise, 0, 255)
+        noisy_img[:,:,1] = np.clip(img[:,:,1] + noise, 0, 255)
+        noisy_img[:,:,2] = np.clip(img[:,:,2] + noise, 0, 255)
+
+        # Convert to grayscale
+        noisy_img_gray = np.dot(noisy_img[...,:3], [0.2989, 0.5870, 0.1140])
+
+        # Add opacity to the noisy image
+        alpha = np.random.randint(0, 255, img.shape[:2]).astype(np.uint8)
+        noisy_img_gray = np.stack((noisy_img_gray,)*3, axis=-1)
+        noisy_img_gray = np.concatenate((noisy_img_gray, alpha[:,:,np.newaxis]), axis=2)
+
+        # Save the noisy image
+        noisy_img_pil = Image.fromarray(noisy_img)
+        noisy_img_pil.save(image_path)
+
+
     print(f"Finito!\n{image_path}")
     # planets_list += f"\nSeed:\n<code>{seed}</code>"
 
