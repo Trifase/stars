@@ -849,7 +849,15 @@ def solarsystem():
     def random_bg_color(min, max):
         return round(random.uniform(min, max), 2)
 
-    def get_point_on_circle(xc, yc, r, n=360):
+    def get_random_points_on_circle(xc, yc, r, n=100):
+        points_list = []
+        for _ in range(0, n):
+            angle = math.tau * random.random()
+            p = (int(xc + r * math.cos(angle)), int(yc + r * math.sin(angle)))
+            points_list.append(p) 
+        return points_list
+
+    def get_uniform_points_on_circle(xc, yc, r, n=360):
         return [
             (
                 int(xc + (math.cos(2 * math.pi / n * x) * r)),  # x
@@ -962,6 +970,40 @@ def solarsystem():
         cr.fill()
         return
 
+    def asteroid_density(r, r_min, r_max, max_density):
+        """
+        Calculates the density of asteroids at a given distance r from the center of an asteroid belt.
+
+        Args:
+            r (float): distance from the center of the asteroid belt
+            r_min (float): minimum radius of the asteroid belt
+            r_max (float): maximum radius of the asteroid belt
+            max_density (float): maximum density at the center of the belt
+
+        Returns:
+            float: density of asteroids at distance r
+        """
+        if r < r_min or r > r_max:
+            return 1.0
+        else:
+            midpoint = (r_max - r_min) / 2.0 + r_min
+            inner_range = 0.6 * (r_max - r_min) / 2.0
+            if r <= midpoint - inner_range or r >= midpoint + inner_range:
+                # Calculate the density at the edges of the belt using a modified
+                # formula that gradually decreases the density from max_density to 1.0
+                # as we move away from the center of the belt towards the edges.
+                width = r_max - r_min
+                density_range = max_density - 1.0
+                peak_location = midpoint
+                density = 1.0 + density_range * (math.exp(-((r - peak_location) ** 2) / (2 * ((width / 4) ** 2))))
+                density = min(density, max_density)
+                density = max(density, 1.0)
+            else:
+                # The density is constant within the inner 70% of the belt.
+                density = max_density
+            return density
+
+
     def write_planet_name(cr, x, y, radius, name, type="planet"):
         if type == "planet":
             x1 = x + radius + 20
@@ -1028,7 +1070,6 @@ def solarsystem():
     parser.add_argument("--origin", help="disattiva tutte le feature random", action="store_true")
 
     args, unknown = parser.parse_known_args()
-    print(args)
 
     WIDTH = int(args.width)
     HEIGHT = int(args.height)
@@ -1158,20 +1199,42 @@ def solarsystem():
             planets_list += f"— {p_name}\n"
             planet_size = next_size
             if random.randint(0, 100) <= 30 and planet_size >= 50 and BELTS:   # asteroid belt
+                print("BELTS!")
                 # draw_orbit(cr, next_size, width / 2, sun_center, height - next_center - border_size, r, g, b, a=0.05)  # sfondo
                 belt_radius_min = int(height - next_center - border_size - (planet_size / 2))
                 belt_radius_max = int(height - next_center - border_size + (planet_size / 2))
                 # draw_orbit(cr, 2, width / 2, sun_center, belt_radius_min, r, g, b, a=1)  # bordi netti - inferiore
                 # draw_orbit(cr, 2, width / 2, sun_center, belt_radius_max, r, g, b, a=1)  # bordi netti - superiore
                 belt_points = []
-                for x in range(belt_radius_min, belt_radius_max + 1):
-                    belt_points += get_point_on_circle(width / 2, sun_center, x, n=int(belt_radius_max))
-                # print(len(belt_points))
-                density = 2 * belt_radius_max
-                for point in random.choices(belt_points, k=density):
-                    asteroid_size = random.randint(0, int(belt_radius_max / random.randint(100, 150)))
+                midpoint = (belt_radius_max - belt_radius_min) / 2.0 + belt_radius_min
+                inner_range = 0.6 * (belt_radius_max - belt_radius_min) / 2.0
+                for x in range(belt_radius_min, belt_radius_max + 1, 2):
+                    # xC = (belt_radius_max + belt_radius_min) / 2
+                    # r = (belt_radius_max - belt_radius_min) / 2
+                    # density = int(math.sqrt(r**2 - (x - xC)**2))*5
+
+                    max_density = 120
+                    density = int(asteroid_density(x, belt_radius_min, belt_radius_max, max_density))
+                    
+                    asteroid_size_min = 2
+                    asteroid_size_max = 3
+                                        # if density > 1500:
+                    #     density = 1500
+                    belt_points = get_random_points_on_circle(width / 2, sun_center, x, n=density)
+                    # print(f"x: {x} - Density: {density} - belt_points: {len(belt_points)}")
+
+                    for point in belt_points:
+                        asteroid_size = random.randint(asteroid_size_min, asteroid_size_max)
+                        if x <= midpoint - inner_range or x >= midpoint + inner_range:  # bordi esterni
+                            asteroid_size = asteroid_size / 2
+                            draw_circle_fill(cr, point[0], point[1], asteroid_size, r, g, b, a=random.uniform(0.4, 0.8))
+                        else:
+                            draw_circle_fill(cr, point[0], point[1], asteroid_size, r, g, b, a=random.uniform(0.8, 1))
+                
+
                     # asteroid_size = 1
-                    draw_circle_fill(cr, point[0], point[1], asteroid_size, r, g, b, a=random.uniform(0.5, 1))
+                    # print(point[0], point[1])
+
                 # write_planet_name(cr=cr, x=width / 2, y=next_center, radius=planet_radius, name=p_name, type="belt")
 
 
@@ -1217,7 +1280,7 @@ def solarsystem():
                 for i in range(n_moons):
                     moon_radius = round(planet_radius * random.uniform(0.1, 0.3))  # la luna è il 10%-30% del pianeta
                     orbit_radius = planet_radius + moon_radius + (10 * (i + 1))  # orbita sempre più grande ogni luna
-                    moon_pos = get_point_on_circle(width / 2, next_center, orbit_radius, n=5)[i + 3]  # seleziono n posizioni sull'orbita e piazzo le lune in ordine
+                    moon_pos = get_uniform_points_on_circle(width / 2, next_center, orbit_radius, n=5)[i + 3]  # seleziono n posizioni sull'orbita e piazzo le lune in ordine
                     # moon_pos = random.choice(circle_points(xc=width / 2, yc=next_center, radius=orbit_radius))  # scelgo una posizione a caso dall'orbita
                     mr, mg, mb = r + random.uniform(-0.1, 0.1), g + random.uniform(-0.1, 0.1), b + random.uniform(-0.1, 0.1)  # modifico un po' il colore
                     draw_orbit(cr, 1, width / 2, next_center, orbit_radius, r=mr, g=mg, b=mb)  # mi disegno l'orbita della luna
@@ -1285,6 +1348,8 @@ def solarsystem():
 
     print(f"Finito!\n{image_path}")
     # planets_list += f"\nSeed:\n<code>{seed}</code>"
+
+
 
 
 if __name__ == '__main__':
