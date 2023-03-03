@@ -1343,15 +1343,22 @@ def solarsystem():
 
             elif planet_type == "moons" and MOONS and planet_radius >= 50:
                 n_moons = random.randint(1, 3)
+
+                moons = []
                 for i in range(n_moons):
                     moon_radius = round(planet_radius * random.uniform(0.1, 0.3))  # la luna è il 10%-30% del pianeta
                     orbit_radius = planet_radius + moon_radius + (10 * (i + 1))  # orbita sempre più grande ogni luna
                     moon_pos = get_uniform_points_on_circle(width / 2, next_center, orbit_radius, n=5)[i + 3]  # seleziono n posizioni sull'orbita e piazzo le lune in ordine
-                    # moon_pos = random.choice(circle_points(xc=width / 2, yc=next_center, radius=orbit_radius))  # scelgo una posizione a caso dall'orbita
                     mr, mg, mb = r + random.uniform(-0.1, 0.1), g + random.uniform(-0.1, 0.1), b + random.uniform(-0.1, 0.1)  # modifico un po' il colore
-                    draw_orbit(cr, 1, width / 2, next_center, orbit_radius, r=mr, g=mg, b=mb)  # mi disegno l'orbita della luna
+                    moons.append((moon_radius, orbit_radius, moon_pos, mr, mg, mb))
+
+                for m in moons:
+                    moon_radius, orbit_radius, moon_pos, mr, mg, mb = m
+                    draw_orbit(cr, 2, width / 2, next_center, orbit_radius, r=mr, g=mg, b=mb)  # mi disegno l'orbita della luna
+
+                for m in moons:
+                    moon_radius, orbit_radius, moon_pos, mr, mg, mb = m
                     draw_circle_fill(cr=cr, x=moon_pos[0], y=moon_pos[1], radius=moon_radius, r=mr, g=mg, b=mb, gradient=True)  # disegno luna
-                draw_planet(cr=cr, x=width / 2, y=next_center, radius=planet_radius, r=r, g=g, b=b, gradient=True)
                 # write_planet_name(cr=cr, x=width / 2, y=next_center, radius=planet_radius, name=p_name, type="moon")
 
             else:
